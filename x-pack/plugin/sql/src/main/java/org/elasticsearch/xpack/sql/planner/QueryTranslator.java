@@ -114,6 +114,9 @@ import static org.elasticsearch.xpack.sql.type.DataType.DATE;
 
 final class QueryTranslator {
 
+    private static final String BOTH_EXPRESSIONS_NULL_MSG = "Both expressions are null";
+    private static final String NO_IDEA_HOW_TO_TRANSLATE_MSG = "No idea how to translate ";
+
     private QueryTranslator(){}
 
     private static final List<ExpressionTranslator<?>> QUERY_TRANSLATORS = Arrays.asList(
@@ -156,10 +159,6 @@ final class QueryTranslator {
             this(query, null);
         }
 
-        QueryTranslation(AggFilter aggFilter) {
-            this(null, aggFilter);
-        }
-
         QueryTranslation(Query query, AggFilter aggFilter) {
             this.query = query;
             this.aggFilter = aggFilter;
@@ -167,7 +166,7 @@ final class QueryTranslator {
     }
 
     static QueryTranslation toQuery(Expression e, boolean onAggs) {
-        QueryTranslation translation = null;
+        QueryTranslation translation;
         for (ExpressionTranslator<?> translator : QUERY_TRANSLATORS) {
             translation = translator.translate(e, onAggs);
             if (translation != null) {
@@ -334,12 +333,9 @@ final class QueryTranslator {
     }
 
     static QueryTranslation and(Source source, QueryTranslation left, QueryTranslation right) {
-        Check.isTrue(left != null || right != null, "Both expressions are null");
-        if (left == null) {
-            return right;
-        }
-        if (right == null) {
-            return left;
+        QueryTranslation qt = validateAndReturnTrivial(left, right);
+        if (qt != null) {
+            return qt;
         }
 
         Query newQ = null;
@@ -362,24 +358,18 @@ final class QueryTranslator {
         return new QueryTranslation(newQ, aggFilter);
     }
 
-    static Query and(Source source, Query left, Query right) {
-        Check.isTrue(left != null || right != null, "Both expressions are null");
-        if (left == null) {
-            return right;
-        }
-        if (right == null) {
-            return left;
+    private static Query and(Source source, Query left, Query right) {
+        Query q = validateAndReturnTrivial(left, right);
+        if (q != null) {
+            return q;
         }
         return new BoolQuery(source, true, left, right);
     }
 
-    static QueryTranslation or(Source source, QueryTranslation left, QueryTranslation right) {
-        Check.isTrue(left != null || right != null, "Both expressions are null");
-        if (left == null) {
-            return right;
-        }
-        if (right == null) {
-            return left;
+    private static QueryTranslation or(Source source, QueryTranslation left, QueryTranslation right) {
+        QueryTranslation qt = validateAndReturnTrivial(left, right);
+        if (qt != null) {
+            return qt;
         }
 
         Query newQ = null;
@@ -387,8 +377,7 @@ final class QueryTranslator {
             newQ = or(source, left.query, right.query);
         }
 
-        AggFilter aggFilter = null;
-
+        AggFilter aggFilter;
         if (left.aggFilter == null) {
             aggFilter = right.aggFilter;
         }
@@ -402,16 +391,34 @@ final class QueryTranslator {
         return new QueryTranslation(newQ, aggFilter);
     }
 
-    static Query or(Source source, Query left, Query right) {
-        Check.isTrue(left != null || right != null, "Both expressions are null");
+    private static Query or(Source source, Query left, Query right) {
+        Query q = validateAndReturnTrivial(left, right);
+        if (q != null) {
+            return q;
+        }
+        return new BoolQuery(source, false, left, right);
+    }
 
+    private static QueryTranslation validateAndReturnTrivial(QueryTranslation left, QueryTranslation right) {
+        Check.isTrue(left != null || right != null, BOTH_EXPRESSIONS_NULL_MSG);
         if (left == null) {
             return right;
         }
         if (right == null) {
             return left;
         }
-        return new BoolQuery(source, false, left, right);
+        return null;
+    }
+
+    private static Query validateAndReturnTrivial(Query left, Query right) {
+        Check.isTrue(left != null || right != null, BOTH_EXPRESSIONS_NULL_MSG);
+        if (left == null) {
+            return right;
+        }
+        if (right == null) {
+            return left;
+        }
+        return null;
     }
 
     static String nameOf(Expression e) {
@@ -427,21 +434,14 @@ final class QueryTranslator {
         throw new SqlIllegalArgumentException("Cannot determine name for {}", e);
     }
 
-    static String idOf(Expression e) {
-        if (e instanceof NamedExpression) {
-            return ((NamedExpression) e).id().toString();
-        }
-        throw new SqlIllegalArgumentException("Cannot determine id for {}", e);
-    }
-
-    static String dateFormat(Expression e) {
+    private static String dateFormat(Expression e) {
         if (e instanceof DateTimeFunction) {
             return ((DateTimeFunction) e).dateTimeFormat();
         }
         return null;
     }
 
-    static String field(AggregateFunction af) {
+    private static String field(AggregateFunction af) {
         Expression arg = af.field();
         if (arg instanceof FieldAttribute) {
             FieldAttribute field = (FieldAttribute) arg;
@@ -569,9 +569,9 @@ final class QueryTranslator {
 
                 if (e instanceof FieldAttribute) {
                     query = wrapIfNested(q, e);
+                } else {
+                    query = q;
                 }
-
-                query = q;
             }
 
             return new QueryTranslation(query, aggFilter);
@@ -588,14 +588,13 @@ final class QueryTranslator {
             if (onAggs) {
                 aggFilter = new AggFilter(isNotNull.id().toString(), isNotNull.asScript());
             } else {
-                Query q = null;
+                Query q;
                 if (isNotNull.field() instanceof FieldAttribute) {
                     q = new ExistsQuery(isNotNull.source(), nameOf(isNotNull.field()));
                 } else {
                     q = new ScriptQuery(isNotNull.source(), isNotNull.asScript());
                 }
-                final Query qu = q;
-                query = handleQuery(isNotNull, isNotNull.field(), () -> qu);
+                query = handleQuery(isNotNull, isNotNull.field(), () -> q);
             }
 
             return new QueryTranslation(query, aggFilter);
@@ -612,15 +611,13 @@ final class QueryTranslator {
             if (onAggs) {
                 aggFilter = new AggFilter(isNull.id().toString(), isNull.asScript());
             } else {
-                Query q = null;
+                Query q;
                 if (isNull.field() instanceof FieldAttribute) {
                     q = new NotQuery(isNull.source(), new ExistsQuery(isNull.source(), nameOf(isNull.field())));
                 } else {
                     q = new ScriptQuery(isNull.source(), isNull.asScript());
                 }
-                final Query qu = q;
-
-                query = handleQuery(isNull, isNull.field(), () -> qu);
+                query = handleQuery(isNull, isNull.field(), () -> q);
             }
 
             return new QueryTranslation(query, aggFilter);
@@ -659,7 +656,7 @@ final class QueryTranslator {
             // if the code gets here it's a bug
             //
             else {
-                throw new SqlIllegalArgumentException("No idea how to translate " + bc.left());
+                throw new SqlIllegalArgumentException(NO_IDEA_HOW_TO_TRANSLATE_MSG + bc.left());
             }
         }
 
@@ -722,7 +719,7 @@ final class QueryTranslator {
                     aggFilter = new AggFilter(at.id().toString(), in.asScript());
                 }
                 else {
-                    Query q = null;
+                    Query q;
                     if (in.value() instanceof FieldAttribute) {
                         FieldAttribute fa = (FieldAttribute) in.value();
                         // equality should always be against an exact match (which is important for strings)
@@ -730,8 +727,7 @@ final class QueryTranslator {
                     } else {
                         q = new ScriptQuery(in.source(), in.asScript());
                     }
-                    Query qu = q;
-                    query = handleQuery(in, ne, () -> qu);
+                    query = handleQuery(in, ne, () -> q);
                 }
                 return new QueryTranslation(query, aggFilter);
             }
@@ -739,7 +735,7 @@ final class QueryTranslator {
             // if the code gets here it's a bug
             //
             else {
-                throw new SqlIllegalArgumentException("No idea how to translate " + in.value());
+                throw new SqlIllegalArgumentException(NO_IDEA_HOW_TO_TRANSLATE_MSG + in.value());
             }
         }
     }
@@ -768,7 +764,7 @@ final class QueryTranslator {
                 }
                 return new QueryTranslation(query, aggFilter);
             } else {
-                throw new SqlIllegalArgumentException("No idea how to translate " + e);
+                throw new SqlIllegalArgumentException(NO_IDEA_HOW_TO_TRANSLATE_MSG + e);
             }
         }
     }
@@ -954,7 +950,7 @@ final class QueryTranslator {
         private final Class<E> typeToken = ReflectionUtils.detectSuperTypeForRuleLike(getClass());
 
         @SuppressWarnings("unchecked")
-        public QueryTranslation translate(Expression exp, boolean onAggs) {
+        QueryTranslation translate(Expression exp, boolean onAggs) {
             return (typeToken.isInstance(exp) ? asQuery((E) exp, onAggs) : null);
         }
 

@@ -346,9 +346,7 @@ public class Analyzer extends RuleExecutor<LogicalPlan> {
 
                     return changed ? new Aggregate(a.source(), a.child(), newGroupings, a.aggregates()) : a;
                 }
-            }
-
-            else if (plan instanceof Join) {
+            } else if (plan instanceof Join) {
                 Join j = (Join) plan;
                 if (!j.duplicatesResolved()) {
                     LogicalPlan deduped = dedupRight(j.left(), j.right());
@@ -524,16 +522,14 @@ public class Analyzer extends RuleExecutor<LogicalPlan> {
                         if (ordinal > 0 && ordinal <= max) {
                             newOrder.add(new Order(order.source(), orderBy.child().output().get(ordinal - 1), order.direction(),
                                     order.nullsPosition()));
-                        }
-                        else {
+                        } else {
                             // report error
                             String message = LoggerMessageFormat.format("Invalid ordinal [{}] specified in [{}] (valid range is [1, {}])",
                                     ordinal, orderBy.sourceText(), max);
                             UnresolvedAttribute ua = new UnresolvedAttribute(child.source(), orderBy.sourceText(), null, message);
                             newOrder.add(new Order(order.source(), ua, order.direction(), order.nullsPosition()));
                         }
-                    }
-                    else {
+                    } else {
                         newOrder.add(order);
                     }
                 }
@@ -719,13 +715,11 @@ public class Analyzer extends RuleExecutor<LogicalPlan> {
                 Aggregate a = (Aggregate) plan;
                 // missing attributes can only be grouping expressions
                 for (Attribute m : missing) {
-                    // but we don't can't add an agg if the group is missing
+                    // but we can't add an agg if the group is missing
                     if (!Expressions.anyMatch(a.groupings(), m::semanticEquals)) {
-                        if (m instanceof Attribute) {
-                            // pass failure information to help the verifier
-                            m = new UnresolvedAttribute(m.source(), m.name(), m.qualifier(), null, null,
-                                    new AggGroupingFailure(Expressions.names(a.groupings())));
-                        }
+                        // pass failure information to help the verifier
+                        m = new UnresolvedAttribute(m.source(), m.name(), m.qualifier(), null, null,
+                            new AggGroupingFailure(Expressions.names(a.groupings())));
                         failed.add(m);
                     }
                 }
@@ -821,7 +815,7 @@ public class Analyzer extends RuleExecutor<LogicalPlan> {
                     }
                 }
                 return u;
-             }, UnresolvedAttribute.class);
+            }, UnresolvedAttribute.class);
         }
     }
 
@@ -851,7 +845,7 @@ public class Analyzer extends RuleExecutor<LogicalPlan> {
                         // Special check for COUNT: an already seen COUNT function will be returned only if its DISTINCT property
                         // matches the one from the unresolved function to be checked.
                         if (seenFunction instanceof Count) {
-                            if (seenFunction.equals(f)){
+                            if (seenFunction.equals(f)) {
                                 return seenFunction;
                             }
                         } else {
@@ -923,12 +917,7 @@ public class Analyzer extends RuleExecutor<LogicalPlan> {
         }
 
         private List<Function> getList(Map<String, List<Function>> seen, String name) {
-            List<Function> list = seen.get(name);
-            if (list == null) {
-                list = new ArrayList<>();
-                seen.put(name, list);
-            }
-            return list;
+            return seen.computeIfAbsent(name, k -> new ArrayList<>());
         }
     }
 
@@ -960,8 +949,7 @@ public class Analyzer extends RuleExecutor<LogicalPlan> {
 
         private List<NamedExpression> assignAliases(List<? extends NamedExpression> exprs) {
             List<NamedExpression> newExpr = new ArrayList<>(exprs.size());
-            for (int i = 0; i < exprs.size(); i++) {
-                NamedExpression expr = exprs.get(i);
+            for (NamedExpression expr : exprs) {
                 NamedExpression transformed = (NamedExpression) expr.transformUp(ua -> {
                     Expression child = ua.child();
                     if (child instanceof NamedExpression) {
@@ -969,12 +957,6 @@ public class Analyzer extends RuleExecutor<LogicalPlan> {
                     }
                     if (!child.resolved()) {
                         return ua;
-                    }
-                    if (child instanceof Cast) {
-                        Cast c = (Cast) child;
-                        if (c.field() instanceof NamedExpression) {
-                            return new Alias(c.source(), ((NamedExpression) c.field()).name(), c);
-                        }
                     }
                     return new Alias(child.source(), child.sourceText(), child);
                 }, UnresolvedAlias.class);
