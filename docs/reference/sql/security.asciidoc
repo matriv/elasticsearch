@@ -20,7 +20,12 @@ Typically (and again, do note that your environment might differ significantly),
 The authentication support in {es-sql} is of two types:
 
 Username/Password:: Set these through `user` and `password` properties.
-PKI/X.509:: Use X.509 certificates to authenticate {es-sql} to {es}. For this, one would need to setup the `keystore` containing the private key and certificate to the appropriate user (configured in {es}) and the `truststore` with the CA certificate used to sign the SSL/TLS certificates in the {es} cluster. That is, one should setup the key to authenticate {es-sql} and also to verify that is the right one. To do so, one should set the `ssl.keystore.location` and `ssl.truststore.location` properties to indicate the `keystore` and `truststore` to use. It is recommended to have these secured through a password in which case `ssl.keystore.pass` and `ssl.truststore.pass` properties are required.
+PKI/X.509:: Use X.509 certificates to authenticate {es-sql} to {es}. For this, one would need to setup the `keystore`
+containing the private key and certificate to the appropriate user (configured in {es}) and the `truststore` with the
+CA certificate used to sign the SSL/TLS certificates in the {es} cluster. That is, one should setup the key to
+authenticate {es-sql} and also to verify that is the right one. To do so, one should set the `ssl.keystore.location`
+and `ssl.truststore.location` properties to indicate the `keystore` and `truststore` to use. It is recommended to have
+these secured through a password in which case `ssl.keystore.password` and `ssl.truststore.password` properties are required.
 
 [float]
 [[sql-security-permissions]]

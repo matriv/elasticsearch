@@ -75,9 +75,9 @@ public class ConnectionBuilder {
              * two settings but that is a problem for another day.
              */
             properties.put("ssl.keystore.location", keystoreLocation);
-            properties.put("ssl.keystore.pass", keystorePassword);
+            properties.put("ssl.keystore.password", keystorePassword);
             properties.put("ssl.truststore.location", keystoreLocation);
-            properties.put("ssl.truststore.pass", keystorePassword);
+            properties.put("ssl.truststore.password", keystorePassword);
         }
 
         if ("https".equals(uri.getScheme())) {

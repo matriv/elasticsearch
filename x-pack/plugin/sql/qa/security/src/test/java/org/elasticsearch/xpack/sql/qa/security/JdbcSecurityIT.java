@@ -77,9 +77,9 @@ public class JdbcSecurityIT extends SqlSecurityTestCase {
 
         properties.put("ssl", "true");
         properties.put("ssl.keystore.location", keyStoreStr);
-        properties.put("ssl.keystore.pass", "keypass");
+        properties.put("ssl.keystore.password", "keypass");
         properties.put("ssl.truststore.location", keyStoreStr);
-        properties.put("ssl.truststore.pass", "keypass");
+        properties.put("ssl.truststore.password", "keypass");
     }
 
     static void expectActionMatchesAdmin(CheckedFunction<Connection, ResultSet, SQLException> adminAction,

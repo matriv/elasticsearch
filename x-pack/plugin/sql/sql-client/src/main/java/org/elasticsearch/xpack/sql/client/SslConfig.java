@@ -38,7 +38,7 @@ public class SslConfig {
     public static final String SSL_KEYSTORE_LOCATION = "ssl.keystore.location";
     private static final String SSL_KEYSTORE_LOCATION_DEFAULT = "";
 
-    public static final String SSL_KEYSTORE_PASS = "ssl.keystore.pass";
+    public static final String SSL_KEYSTORE_PASS = "ssl.keystore.password";
     private static final String SSL_KEYSTORE_PASS_DEFAULT = "";
 
     public static final String SSL_KEYSTORE_TYPE = "ssl.keystore.type";
@@ -47,7 +47,7 @@ public class SslConfig {
     public static final String SSL_TRUSTSTORE_LOCATION = "ssl.truststore.location";
     private static final String SSL_TRUSTSTORE_LOCATION_DEFAULT = "";
 
-    public static final String SSL_TRUSTSTORE_PASS = "ssl.truststore.pass";
+    public static final String SSL_TRUSTSTORE_PASS = "ssl.truststore.password";
     private static final String SSL_TRUSTSTORE_PASS_DEFAULT = "";
 
     public static final String SSL_TRUSTSTORE_TYPE = "ssl.truststore.type";

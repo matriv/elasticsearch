@@ -216,12 +216,12 @@ public class JdbcConfigurationTests extends ESTestCase {
         urlPropMap.put("ssl", "false");
         urlPropMap.put("ssl.protocol", "SSLv3");
         urlPropMap.put("ssl.keystore.location", "/abc/xyz");
-        urlPropMap.put("ssl.keystore.pass", "mypass");
+        urlPropMap.put("ssl.keystore.password", "mypass");
         
         Map<String, String> propMap = new HashMap<>(4);
         propMap.put("ssl.keystore.type", "PKCS12");
         propMap.put("ssl.truststore.location", "/foo/bar");
-        propMap.put("ssl.truststore.pass", "anotherpass");
+        propMap.put("ssl.truststore.password", "anotherpass");
         propMap.put("ssl.truststore.type", "jks");
         
         Properties props = new Properties();
@@ -240,10 +240,10 @@ public class JdbcConfigurationTests extends ESTestCase {
         propMap.put("ssl", "false");
         propMap.put("ssl.protocol", "TLS");
         propMap.put("ssl.keystore.location", "/xyz");
-        propMap.put("ssl.keystore.pass", "different_mypass");
+        propMap.put("ssl.keystore.password", "different_mypass");
         propMap.put("ssl.keystore.type", "JKS");
         propMap.put("ssl.truststore.location", "/baz");
-        propMap.put("ssl.truststore.pass", "different_anotherpass");
+        propMap.put("ssl.truststore.password", "different_anotherpass");
         propMap.put("ssl.truststore.type", "PKCS11");
         
         Properties props = new Properties();
@@ -271,10 +271,10 @@ public class JdbcConfigurationTests extends ESTestCase {
         assertJdbcSqlExceptionFromUrl("ssl.protocl", "ssl.protocol");
         assertJdbcSqlExceptionFromUrl("sssl", "ssl");
         assertJdbcSqlExceptionFromUrl("ssl.keystore.lction", "ssl.keystore.location");
-        assertJdbcSqlExceptionFromUrl("ssl.keystore.pss", "ssl.keystore.pass");
+        assertJdbcSqlExceptionFromUrl("ssl.keystore.psswrd", "ssl.keystore.password");
         assertJdbcSqlExceptionFromUrl("ssl.keystore.typ", "ssl.keystore.type");
         assertJdbcSqlExceptionFromUrl("ssl.trustsore.location", "ssl.truststore.location");
-        assertJdbcSqlExceptionFromUrl("ssl.tuststore.pass", "ssl.truststore.pass");
+        assertJdbcSqlExceptionFromUrl("ssl.tuststore.password", "ssl.truststore.password");
         assertJdbcSqlExceptionFromUrl("ssl.ruststore.type", "ssl.truststore.type");
     }
     
@@ -282,10 +282,10 @@ public class JdbcConfigurationTests extends ESTestCase {
         assertJdbcSqlExceptionFromProperties("ssl.protocl", "ssl.protocol");
         assertJdbcSqlExceptionFromProperties("sssl", "ssl");
         assertJdbcSqlExceptionFromProperties("ssl.keystore.lction", "ssl.keystore.location");
-        assertJdbcSqlExceptionFromProperties("ssl.keystore.pss", "ssl.keystore.pass");
+        assertJdbcSqlExceptionFromProperties("ssl.keystore.psswrd", "ssl.keystore.password");
         assertJdbcSqlExceptionFromProperties("ssl.keystore.typ", "ssl.keystore.type");
         assertJdbcSqlExceptionFromProperties("ssl.trustsore.location", "ssl.truststore.location");
-        assertJdbcSqlExceptionFromProperties("ssl.tuststore.pass", "ssl.truststore.pass");
+        assertJdbcSqlExceptionFromProperties("ssl.tuststore.password", "ssl.truststore.password");
         assertJdbcSqlExceptionFromProperties("ssl.ruststore.type", "ssl.truststore.type");
     }
     
@@ -296,10 +296,10 @@ public class JdbcConfigurationTests extends ESTestCase {
         sslPropertiesMap.put("ssl", "false");
         sslPropertiesMap.put("ssl.protocol", "SSLv3");
         sslPropertiesMap.put("ssl.keystore.location", "/abc/xyz");
-        sslPropertiesMap.put("ssl.keystore.pass", "mypass");
+        sslPropertiesMap.put("ssl.keystore.password", "mypass");
         sslPropertiesMap.put("ssl.keystore.type", "PKCS12");
         sslPropertiesMap.put("ssl.truststore.location", "/foo/bar");
-        sslPropertiesMap.put("ssl.truststore.pass", "anotherpass");
+        sslPropertiesMap.put("ssl.truststore.password", "anotherpass");
         sslPropertiesMap.put("ssl.truststore.type", "jks");
         
         return sslPropertiesMap;

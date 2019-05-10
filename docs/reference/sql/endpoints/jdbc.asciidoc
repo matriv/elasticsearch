@@ -112,13 +112,13 @@ Query timeout (in seconds). That is the maximum amount of time waiting for a que
 
 `ssl.keystore.location`:: key store (if used) location
 
-`ssl.keystore.pass`:: key store password
+`ssl.keystore.password`:: key store password
 
 `ssl.keystore.type` (default `JKS`):: key store type. `PKCS12` is a common, alternative format
 
 `ssl.truststore.location`:: trust store location
 
-`ssl.truststore.pass`:: trust store password
+`ssl.truststore.password`:: trust store password
 
 `ssl.truststore.type` (default `JKS`):: trust store type. `PKCS12` is a common, alternative format
 
