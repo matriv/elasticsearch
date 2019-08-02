@@ -8,6 +8,7 @@ dependencies {
 
   // JDBC testing dependencies
   compile project(path: xpackModule('sql:jdbc'), configuration: 'nodeps')
+  compile 'io.zonky.test:embedded-postgres:1.2.4'
 
   compile project(path: xpackModule('sql:sql-action'))
   compile "net.sourceforge.csvjdbc:csvjdbc:${csvjdbcVersion}"
@@ -62,6 +63,8 @@ subprojects {
     // JDBC testing dependencies
     testRuntime "net.sourceforge.csvjdbc:csvjdbc:${csvjdbcVersion}"
     testRuntime "com.h2database:h2:${h2Version}"
+    testRuntime "io.zonky.test:embedded-postgres:1.2.4"
+    testRuntime group: 'io.zonky.test.postgres', name: 'embedded-postgres-binaries-bom', version: '11.4.0', ext: 'pom'
 
     // H2GIS testing dependencies
     testRuntime ("org.orbisgis:h2gis:${h2gisVersion}") {

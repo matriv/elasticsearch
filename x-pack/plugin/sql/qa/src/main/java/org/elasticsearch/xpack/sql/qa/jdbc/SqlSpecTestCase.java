@@ -6,13 +6,23 @@
 package org.elasticsearch.xpack.sql.qa.jdbc;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-
+import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
+import io.zonky.test.db.postgres.embedded.PgBinaryResolver;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assume;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -25,9 +35,25 @@ public abstract class SqlSpecTestCase extends SpecBaseIntegrationTestCase {
     private String query;
 
     @ClassRule
-    public static LocalH2 H2 = new LocalH2((c) -> {
-        c.createStatement().execute("RUNSCRIPT FROM 'classpath:/setup_test_emp.sql'");
-    });
+    public static LocalH2 H2 = new LocalH2((c) -> c.createStatement().execute("RUNSCRIPT FROM 'classpath:/setup_test_emp.sql'"));
+
+    EmbeddedPostgres PG;
+
+    @Before
+    public void initializePostgres() throws Exception {
+        PG = EmbeddedPostgres.start();
+
+        try (Connection c = PG.getPostgresDatabase().getConnection(); Statement s = c.createStatement()) {
+            for (String sqlStmt : Files.readAllLines(Paths.get(ClassLoader.getSystemResource("/setup_test_emp.sql").toURI()))) {
+                s.executeUpdate(sqlStmt);
+            }
+        }
+    }
+
+    @After
+    public void shutdownPostgres() throws IOException {
+        PG.close();
+    }
 
     @ParametersFactory(argumentFormatting = PARAM_FORMATTING)
     public static List<Object[]> readScriptSpec() throws Exception {
@@ -83,11 +109,11 @@ public abstract class SqlSpecTestCase extends SpecBaseIntegrationTestCase {
             Assume.assumeTrue(goodLocale);
         }
         
-        try (Connection h2 = H2.get();
+        try (Connection h2 = H2.get(); Connection pg = PG.getPostgresDatabase().getConnection();
              Connection es = esJdbc()) {
 
             ResultSet expected, elasticResults;
-            expected = executeJdbcQuery(h2, query);
+            expected = executeJdbcQuery(pg, query);
             elasticResults = executeJdbcQuery(es, query);
 
             assertResults(expected, elasticResults);
