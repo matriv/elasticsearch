@@ -77,7 +77,7 @@ queryNoWith
 
 limitClause
     : LIMIT limit=(INTEGER_VALUE | ALL)                                                                   
-    | LIMIT_ESC limit=(INTEGER_VALUE | ALL) ESC_END                                              
+    | ESC_START LIMIT limit=(INTEGER_VALUE | ALL) ESC_END
     ;
     
 queryTerm
@@ -217,7 +217,7 @@ pattern
     
 patternEscape
     : ESCAPE escape=string
-    | ESCAPE_ESC escape=string ESC_END
+    | ESC_START ESCAPE escape=string ESC_END
     ;
 
 valueExpression
@@ -250,9 +250,9 @@ builtinDateTimeFunction
 
 castExpression
     : castTemplate
-    | FUNCTION_ESC castTemplate ESC_END
+    | ESC_START FUNCTION_ESC castTemplate ESC_END
     | convertTemplate
-    | FUNCTION_ESC convertTemplate ESC_END
+    | ESC_START FUNCTION_ESC convertTemplate ESC_END
     ;
 
 castTemplate
@@ -265,7 +265,7 @@ convertTemplate
 
 extractExpression
     : extractTemplate
-    | FUNCTION_ESC extractTemplate ESC_END
+    | ESC_START FUNCTION_ESC extractTemplate ESC_END
     ;
     
 extractTemplate
@@ -274,7 +274,7 @@ extractTemplate
 
 functionExpression
     : functionTemplate
-    | FUNCTION_ESC functionTemplate ESC_END
+    | ESC_START FUNCTION_ESC functionTemplate ESC_END
     ;
     
 functionTemplate
@@ -293,10 +293,10 @@ constant
     | booleanValue                                                                             #booleanLiteral
     | STRING+                                                                                  #stringLiteral
     | PARAM                                                                                    #paramLiteral
-    | DATE_ESC string ESC_END                                                                  #dateEscapedLiteral
-    | TIME_ESC string ESC_END                                                                  #timeEscapedLiteral
-    | TIMESTAMP_ESC string ESC_END                                                             #timestampEscapedLiteral
-    | GUID_ESC string ESC_END                                                                  #guidEscapedLiteral
+    | ESC_START DATE_ESC string ESC_END                                                        #dateEscapedLiteral
+    | ESC_START TIME_ESC string ESC_END                                                        #timeEscapedLiteral
+    | ESC_START TIMESTAMP_ESC string ESC_END                                                   #timestampEscapedLiteral
+    | ESC_START GUID_ESC string ESC_END                                                        #guidEscapedLiteral
     ;
 
 comparisonOperator
@@ -480,16 +480,14 @@ YEAR: 'YEAR';
 YEARS: 'YEARS';
 
 // Escaped Sequence
-ESCAPE_ESC: ESC_START 'ESCAPE';
-FUNCTION_ESC: ESC_START 'FN';
-LIMIT_ESC: ESC_START 'LIMIT';
-DATE_ESC: ESC_START 'D';
-TIME_ESC: ESC_START 'T';
-TIMESTAMP_ESC: ESC_START 'TS';
+FUNCTION_ESC: 'FN';
+DATE_ESC: 'D';
+TIME_ESC: 'T';
+TIMESTAMP_ESC: 'TS';
 // mapped to string literal
-GUID_ESC: ESC_START 'GUID';
+GUID_ESC: 'GUID';
 
-ESC_START: '{' (WS)*;
+ESC_START: '{';
 ESC_END: '}';
 
 // Operators
