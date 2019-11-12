@@ -45,7 +45,7 @@ class JdbcConnection implements Connection, JdbcWrapper {
      * If we remove it, we need to make sure no other types of Exceptions (runtime or otherwise) are thrown
      */
     JdbcConnection(JdbcConfiguration connectionInfo) throws SQLException {
-        this(connectionInfo, true);
+        this(connectionInfo, false);
     }
 
     JdbcConnection(JdbcConfiguration connectionInfo, boolean checkServer) throws SQLException {

@@ -1,0 +1,14 @@
+description = 'IDE Debugging for SQL'
+
+dependencies {
+  testCompile project(path: ":modules:aggs-matrix-stats")
+  testCompile project(path: xpackModule('sql'))
+  testCompile project(path: xpackModule('core'))
+  testCompile "org.slf4j:slf4j-api:${versions.slf4j}"
+  testCompile "org.apache.logging.log4j:log4j-slf4j-impl:${versions.log4j}"
+}
+
+forbiddenApisTest.enabled = false
+testingConventions.enabled = false
+integTest.enabled = false
+thirdPartyAudit.enabled = false

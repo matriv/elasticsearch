@@ -44,3 +44,4 @@ eclipse-build
 
 # projects using testfixtures 
 testfixtures_shared/
+bin

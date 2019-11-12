@@ -3,4 +3,5 @@
 //
 
 debug
-SELECT 5 + 2 AS a;
+SHOW TABLES;
+//SELECT * FROM frozen_test;

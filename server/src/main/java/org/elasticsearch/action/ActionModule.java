@@ -360,7 +360,7 @@ import static java.util.Collections.unmodifiableMap;
 public class ActionModule extends AbstractModule {
 
     private static final Logger logger = LogManager.getLogger(ActionModule.class);
-
+    private final boolean transportClient;
     private final Settings settings;
     private final IndexNameExpressionResolver indexNameExpressionResolver;
     private final IndexScopedSettings indexScopedSettings;
@@ -380,6 +380,15 @@ public class ActionModule extends AbstractModule {
                         IndexScopedSettings indexScopedSettings, ClusterSettings clusterSettings, SettingsFilter settingsFilter,
                         ThreadPool threadPool, List<ActionPlugin> actionPlugins, NodeClient nodeClient,
                         CircuitBreakerService circuitBreakerService, UsageService usageService, ClusterService clusterService) {
+        this(false, settings, indexNameExpressionResolver, indexScopedSettings, clusterSettings, settingsFilter, threadPool, actionPlugins,
+                nodeClient, circuitBreakerService, usageService, null);
+    }
+
+    public ActionModule(boolean transportClient, Settings settings, IndexNameExpressionResolver indexNameExpressionResolver,
+            IndexScopedSettings indexScopedSettings, ClusterSettings clusterSettings, SettingsFilter settingsFilter, ThreadPool threadPool,
+            List<ActionPlugin> actionPlugins, NodeClient nodeClient, CircuitBreakerService circuitBreakerService,
+            UsageService usageService, ClusterService clusterService) {
+        this.transportClient = transportClient;
         this.settings = settings;
         this.indexNameExpressionResolver = indexNameExpressionResolver;
         this.indexScopedSettings = indexScopedSettings;
@@ -389,7 +398,7 @@ public class ActionModule extends AbstractModule {
         this.clusterService = clusterService;
         actions = setupActions(actionPlugins);
         actionFilters = setupActionFilters(actionPlugins);
-        autoCreateIndex = new AutoCreateIndex(settings, clusterSettings, indexNameExpressionResolver);
+        autoCreateIndex = transportClient ? null : new AutoCreateIndex(settings, clusterSettings, indexNameExpressionResolver);
         destructiveOperations = new DestructiveOperations(settings, clusterSettings);
         Set<RestHeaderDefinition> headers = Stream.concat(
             actionPlugins.stream().flatMap(p -> p.getRestHeaders().stream()),
@@ -411,7 +420,7 @@ public class ActionModule extends AbstractModule {
         indicesAliasesRequestRequestValidators = new RequestValidators<>(
                 actionPlugins.stream().flatMap(p -> p.indicesAliasesRequestValidators().stream()).collect(Collectors.toList()));
 
-        restController = new RestController(headers, restWrapper, nodeClient, circuitBreakerService, usageService);
+        restController = transportClient ? null : new RestController(headers, restWrapper, nodeClient, circuitBreakerService, usageService);
     }
 
 
@@ -717,6 +726,8 @@ public class ActionModule extends AbstractModule {
         bind(DestructiveOperations.class).toInstance(destructiveOperations);
         bind(new TypeLiteral<RequestValidators<PutMappingRequest>>() {}).toInstance(mappingRequestValidators);
         bind(new TypeLiteral<RequestValidators<IndicesAliasesRequest>>() {}).toInstance(indicesAliasesRequestRequestValidators);
+        if (false == transportClient) {
+            // Supporting classes only used when not a transport client
         bind(AutoCreateIndex.class).toInstance(autoCreateIndex);
 
         // register ActionType -> transportAction Map used by NodeClient
@@ -727,6 +738,7 @@ public class ActionModule extends AbstractModule {
             // bind the action as eager singleton, so the map binder one will reuse it
             bind(action.getTransportAction()).asEagerSingleton();
             transportActionsBinder.addBinding(action.getAction()).to(action.getTransportAction()).asEagerSingleton();
+        }
         }
 
     }
