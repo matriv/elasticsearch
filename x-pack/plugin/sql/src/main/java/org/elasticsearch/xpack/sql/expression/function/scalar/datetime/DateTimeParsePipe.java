@@ -24,6 +24,10 @@ public class DateTimeParsePipe extends BinaryDateTimePipe {
         this.parser = parser;
     }
 
+    public Parser parser() {
+        return parser;
+    }
+
     @Override
     protected NodeInfo<DateTimeParsePipe> info() {
         return NodeInfo.create(this, DateTimeParsePipe::new, expression(), left(), right(), zoneId(), parser);

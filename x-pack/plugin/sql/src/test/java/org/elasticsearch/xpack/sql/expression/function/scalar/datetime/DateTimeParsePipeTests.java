@@ -25,16 +25,23 @@ import static org.elasticsearch.xpack.ql.expression.function.scalar.FunctionTest
 import static org.elasticsearch.xpack.ql.tree.SourceTests.randomSource;
 import static org.elasticsearch.xpack.sql.expression.function.scalar.datetime.DateTimeParseProcessor.Parser;
 
-
 public class DateTimeParsePipeTests extends AbstractNodeTestCase<DateTimeParsePipe, Pipe> {
 
     public static DateTimeParsePipe randomDateTimeParsePipe() {
-        return (DateTimeParsePipe) new DateTimeParse(
+        DateTimeParsePipe[] pipes = new DateTimeParsePipe[2];
+        pipes[0] = (DateTimeParsePipe) new DateTimeParse(
             randomSource(),
             randomStringLiteral(),
             randomStringLiteral(),
             randomZone()
         ).makePipe();
+        pipes[1] =  (DateTimeParsePipe) new TimeParse(
+            randomSource(),
+            randomStringLiteral(),
+            randomStringLiteral(),
+            randomZone()
+        ).makePipe();
+        return randomFrom(pipes);
     }
 
     @Override
@@ -59,12 +66,12 @@ public class DateTimeParsePipeTests extends AbstractNodeTestCase<DateTimeParsePi
                 b1.left(), 
                 b1.right(), 
                 b1.zoneId(), 
-                randomFrom(Parser.values()));
+                b1.parser());
         assertEquals(newB, b1.transformPropertiesOnly(v -> Objects.equals(v, b1.expression()) ? newExpression : v, Expression.class));
 
         DateTimeParsePipe b2 = randomInstance();
         Source newLoc = randomValueOtherThan(b2.source(), SourceTests::randomSource);
-        newB = new DateTimeParsePipe(newLoc, b2.expression(), b2.left(), b2.right(), b2.zoneId(), randomFrom(Parser.values()));
+        newB = new DateTimeParsePipe(newLoc, b2.expression(), b2.left(), b2.right(), b2.zoneId(), b2.parser());
         assertEquals(newB, b2.transformPropertiesOnly(v -> Objects.equals(v, b2.source()) ? newLoc : v, Source.class));
     }
 
@@ -110,7 +117,7 @@ public class DateTimeParsePipeTests extends AbstractNodeTestCase<DateTimeParsePi
                 pipe(((Expression) randomValueOtherThan(f.left(), FunctionTestUtils::randomDatetimeLiteral))),
                 f.right(),
                 f.zoneId(),
-                randomFrom(Parser.values())
+                f.parser()
             )
         );
         randoms.add(
@@ -120,7 +127,7 @@ public class DateTimeParsePipeTests extends AbstractNodeTestCase<DateTimeParsePi
                 f.left(),
                 pipe(((Expression) randomValueOtherThan(f.right(), FunctionTestUtils::randomStringLiteral))),
                 f.zoneId(),
-                randomFrom(Parser.values())
+                f.parser()
             )
         );
         randoms.add(
@@ -130,7 +137,17 @@ public class DateTimeParsePipeTests extends AbstractNodeTestCase<DateTimeParsePi
                 f.left(),
                 f.right(),
                 randomValueOtherThan(f.zoneId(), ESTestCase::randomZone),
-                randomFrom(Parser.values())
+                f.parser()
+            )
+        );
+        randoms.add(
+            f -> new DateTimeParsePipe(
+                f.source(),
+                f.expression(),
+                f.left(),
+                f.right(),
+                f.zoneId(),
+                randomValueOtherThan(f.parser(), () -> randomFrom(Parser.values()))
             )
         );
         randoms.add(
@@ -140,7 +157,7 @@ public class DateTimeParsePipeTests extends AbstractNodeTestCase<DateTimeParsePi
                 pipe(((Expression) randomValueOtherThan(f.left(), FunctionTestUtils::randomDatetimeLiteral))),
                 pipe(((Expression) randomValueOtherThan(f.right(), FunctionTestUtils::randomStringLiteral))),
                 randomValueOtherThan(f.zoneId(), ESTestCase::randomZone), 
-                randomFrom(Parser.values())
+                randomValueOtherThan(f.parser(), () -> randomFrom(Parser.values()))
             )
         );
 
@@ -155,6 +172,6 @@ public class DateTimeParsePipeTests extends AbstractNodeTestCase<DateTimeParsePi
                 instance.left(), 
                 instance.right(), 
                 instance.zoneId(),
-                randomFrom(Parser.values()));
+                instance.parser());
     }
 }
