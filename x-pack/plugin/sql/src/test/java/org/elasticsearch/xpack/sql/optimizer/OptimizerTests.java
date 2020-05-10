@@ -137,6 +137,7 @@ import static org.elasticsearch.xpack.ql.TestUtils.nullEqualsOf;
 import static org.elasticsearch.xpack.ql.expression.Literal.FALSE;
 import static org.elasticsearch.xpack.ql.expression.Literal.NULL;
 import static org.elasticsearch.xpack.ql.expression.Literal.TRUE;
+import static org.elasticsearch.xpack.ql.expression.function.scalar.FunctionTestUtils.l;
 import static org.elasticsearch.xpack.ql.tree.Source.EMPTY;
 import static org.elasticsearch.xpack.ql.type.DataTypes.BOOLEAN;
 import static org.elasticsearch.xpack.ql.type.DataTypes.BYTE;
@@ -792,51 +793,61 @@ public class OptimizerTests extends ESTestCase {
     public void testTranslateMinToFirst() {
         Min min1 = new Min(EMPTY, new FieldAttribute(EMPTY, "str", new EsField("str", KEYWORD, emptyMap(), true)));
         Min min2 =  new Min(EMPTY, getFieldAttribute());
+        Min min3 =  new Min(EMPTY, l("foo"));
 
         OrderBy plan = new OrderBy(EMPTY, new Aggregate(EMPTY, FROM(), emptyList(),
-                Arrays.asList(a("min1", min1), a("min2", min2))),
+                Arrays.asList(a("min1", min1), a("min2", min2), a("min3", min3))),
             Arrays.asList(
                 new Order(EMPTY, min1, OrderDirection.ASC, Order.NullsPosition.LAST),
-                new Order(EMPTY, min2, OrderDirection.ASC, Order.NullsPosition.LAST)));
+                new Order(EMPTY, min2, OrderDirection.ASC, Order.NullsPosition.LAST),
+                new Order(EMPTY, min3, OrderDirection.DESC, Order.NullsPosition.FIRST)));
         LogicalPlan result = new ReplaceMinMaxWithTopHits().apply(plan);
         assertTrue(result instanceof OrderBy);
         List<Order> order = ((OrderBy) result).order();
-        assertEquals(2, order.size());
+        assertEquals(3, order.size());
         assertEquals(First.class, order.get(0).child().getClass());
         assertEquals(min2, order.get(1).child());
+        assertEquals(min3, order.get(2).child());
         First first = (First) order.get(0).child();
 
         assertTrue(((OrderBy) result).child() instanceof Aggregate);
         List<? extends NamedExpression> aggregates = ((Aggregate) ((OrderBy) result).child()).aggregates();
-        assertEquals(2, aggregates.size());
+        assertEquals(3, aggregates.size());
         assertEquals(Alias.class, aggregates.get(0).getClass());
         assertEquals(Alias.class, aggregates.get(1).getClass());
         assertSame(first, ((Alias) aggregates.get(0)).child());
         assertEquals(min2, ((Alias) aggregates.get(1)).child());
+        assertEquals(min3, ((Alias) aggregates.get(2)).child());
     }
 
     public void testTranslateMaxToLast() {
         Max max1 = new Max(EMPTY, new FieldAttribute(EMPTY, "str", new EsField("str", KEYWORD, emptyMap(), true)));
         Max max2 =  new Max(EMPTY, getFieldAttribute());
+        Max max3 =  new Max(EMPTY, l("foo"));
 
-        OrderBy plan = new OrderBy(EMPTY, new Aggregate(EMPTY, FROM(), emptyList(), Arrays.asList(a("max1", max1), a("max2", max2))),
+        OrderBy plan = new OrderBy(EMPTY, new Aggregate(EMPTY, FROM(), emptyList(),
+            Arrays.asList(a("max1", max1), a("max2", max2), a("max3", max3))),
             Arrays.asList(
                 new Order(EMPTY, max1, OrderDirection.ASC, Order.NullsPosition.LAST),
-                new Order(EMPTY, max2, OrderDirection.ASC, Order.NullsPosition.LAST)));
+                new Order(EMPTY, max2, OrderDirection.ASC, Order.NullsPosition.LAST),
+                new Order(EMPTY, max3, OrderDirection.DESC, Order.NullsPosition.FIRST)));
         LogicalPlan result = new ReplaceMinMaxWithTopHits().apply(plan);
         assertTrue(result instanceof OrderBy);
         List<Order> order = ((OrderBy) result).order();
+        assertEquals(3, order.size());
         assertEquals(Last.class, order.get(0).child().getClass());
         assertEquals(max2, order.get(1).child());
+        assertEquals(max3, order.get(2).child());
         Last last = (Last) order.get(0).child();
 
         assertTrue(((OrderBy) result).child() instanceof Aggregate);
         List<? extends NamedExpression> aggregates = ((Aggregate) ((OrderBy) result).child()).aggregates();
-        assertEquals(2, aggregates.size());
+        assertEquals(3, aggregates.size());
         assertEquals(Alias.class, aggregates.get(0).getClass());
         assertEquals(Alias.class, aggregates.get(1).getClass());
         assertSame(last, ((Alias) aggregates.get(0)).child());
         assertEquals(max2, ((Alias) aggregates.get(1)).child());
+        assertEquals(max3, ((Alias) aggregates.get(2)).child());
     }
 
     public void testSortAggregateOnOrderByWithTwoFields() {

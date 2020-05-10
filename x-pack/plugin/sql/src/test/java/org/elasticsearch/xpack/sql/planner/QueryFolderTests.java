@@ -175,6 +175,61 @@ public class QueryFolderTests extends ESTestCase {
         assertThat(ee.output().get(0).toString(), startsWith("E(){r}#"));
     }
 
+    public void testLocalExecWithAggs() {
+        PhysicalPlan p = plan("SELECT MIN(10), MAX('foo')");
+        assertEquals(LocalExec.class, p.getClass());
+        LocalExec le = (LocalExec) p;
+        assertEquals(SingletonExecutable.class, le.executable().getClass());
+        SingletonExecutable ee = (SingletonExecutable) le.executable();
+        assertEquals(2, ee.output().size());
+        assertThat(ee.output().get(0).toString(), startsWith("MIN(10){r}#"));
+        assertThat(ee.output().get(1).toString(), startsWith("MAX('foo'){r}#"));
+    }
+
+    public void testLocalExecWithAggsAndWhereFalseFilter() {
+        PhysicalPlan p = plan("SELECT MIN(10), MAX('foo') WHERE 2 > 3");
+        assertEquals(LocalExec.class, p.getClass());
+        LocalExec le = (LocalExec) p;
+        assertEquals(EmptyExecutable.class, le.executable().getClass());
+        EmptyExecutable ee = (EmptyExecutable) le.executable();
+        assertEquals(2, ee.output().size());
+        assertThat(ee.output().get(0).toString(), startsWith("MIN(10){r}#"));
+        assertThat(ee.output().get(1).toString(), startsWith("MAX('foo'){r}#"));
+    }
+
+    public void testLocalExecWithAggsAndWhereTrueFilter() {
+        PhysicalPlan p = plan("SELECT MIN(10), MAX('foo') WHERE 1 = 1");
+        assertEquals(LocalExec.class, p.getClass());
+        LocalExec le = (LocalExec) p;
+        assertEquals(SingletonExecutable.class, le.executable().getClass());
+        SingletonExecutable ee = (SingletonExecutable) le.executable();
+        assertEquals(2, ee.output().size());
+        assertThat(ee.output().get(0).toString(), startsWith("MIN(10){r}#"));
+        assertThat(ee.output().get(1).toString(), startsWith("MAX('foo'){r}#"));
+    }
+
+    public void testLocalExecWithAggsAndWhereTrueFilterAndOrderBy() {
+        PhysicalPlan p = plan("SELECT MIN(10), MAX('foo') WHERE 1 = 1 ORDER BY 1, 2 DESC");
+        assertEquals(LocalExec.class, p.getClass());
+        LocalExec le = (LocalExec) p;
+        assertEquals(SingletonExecutable.class, le.executable().getClass());
+        SingletonExecutable ee = (SingletonExecutable) le.executable();
+        assertEquals(2, ee.output().size());
+        assertThat(ee.output().get(0).toString(), startsWith("MIN(10){r}#"));
+        assertThat(ee.output().get(1).toString(), startsWith("MAX('foo'){r}#"));
+    }
+
+    public void testLocalExecWithAggsAndWhereTrueFilterAndOrderByAndLimit() {
+        PhysicalPlan p = plan("SELECT MIN(10), MAX('foo') WHERE 1 = 1 ORDER BY 1, 2 DESC LIMIT 20");
+        assertEquals(LocalExec.class, p.getClass());
+        LocalExec le = (LocalExec) p;
+        assertEquals(SingletonExecutable.class, le.executable().getClass());
+        SingletonExecutable ee = (SingletonExecutable) le.executable();
+        assertEquals(2, ee.output().size());
+        assertThat(ee.output().get(0).toString(), startsWith("MIN(10){r}#"));
+        assertThat(ee.output().get(1).toString(), startsWith("MAX('foo'){r}#"));
+    }
+
     public void testFoldingOfIsNull() {
         PhysicalPlan p = plan("SELECT keyword FROM test WHERE (keyword IS NOT NULL) IS NULL");
         assertEquals(LocalExec.class, p.getClass());

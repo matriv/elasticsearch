@@ -124,6 +124,7 @@ class QueryFolder extends RuleExecutor<PhysicalPlan> {
                 );
 
         Batch local = new Batch("Local queries",
+                new FoldEmptyAggregateToLocal(),
                 new PropagateEmptyLocal(),
                 new LocalLimit()
                 );
@@ -838,6 +839,30 @@ class QueryFolder extends RuleExecutor<PhysicalPlan> {
     // local
     //
 
+    private static class FoldEmptyAggregateToLocal extends FoldingRule<AggregateExec> {
+
+        @Override
+        protected PhysicalPlan rule(AggregateExec ae) {
+            if (ae.children().size() == 1) {
+                PhysicalPlan p = ae.children().get(0);
+                if (p instanceof LocalExec) {
+                    if (((LocalExec) p).isEmpty() == false) {
+                        Object[] values = new Object[ae.output().size()];
+                        for (int i = 0; i < ae.aggregates().size(); i++) {
+                            Expression e = ae.aggregates().get(i);
+                            if (e instanceof Alias) {
+                                e = ((Alias) e).child();
+                            }
+                            values[i] = ((AggregateFunction) e).foldLocal();
+                        }
+                        return new LocalExec(ae.source(), new SingletonExecutable(ae.output(), values));
+                    }
+                }
+            }
+            return ae;
+        }
+    }
+
     private static class PropagateEmptyLocal extends FoldingRule<PhysicalPlan> {
 
         @Override
@@ -847,19 +872,6 @@ class QueryFolder extends RuleExecutor<PhysicalPlan> {
                 if (p instanceof LocalExec) {
                     if (((LocalExec) p).isEmpty()) {
                         return new LocalExec(plan.source(), new EmptyExecutable(plan.output()));
-                    } else if (plan instanceof AggregateExec) {
-                        AggregateExec ae = (AggregateExec) plan;
-                        Object[] values = new Object[ae.output().size()];
-                        for (int i = 0; i < ae.aggregates().size(); i++) {
-                            Expression e = ae.aggregates().get(i);
-                            if (e instanceof Alias) {
-                                e = ((Alias) e).child();
-                            }
-                            values[i] = ((AggregateFunction) e).foldLocal();
-                        }
-                        return new LocalExec(plan.source(), new SingletonExecutable(ae.output(), values));
-                    } else {
-                        throw new SqlIllegalArgumentException("Encountered a bug; {} is a LocalExec but is not empty", p);
                     }
                 }
             }
