@@ -152,7 +152,7 @@ class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
 
     @Override
     public void setTime(int parameterIndex, Time x) throws SQLException {
-        setObject(parameterIndex, x, Types.TIMESTAMP);
+        setObject(parameterIndex, x, Types.TIME);
     }
 
     @Override
@@ -260,11 +260,11 @@ class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     @Override
     public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException {
         if (cal == null) {
-            setObject(parameterIndex, x, Types.TIMESTAMP);
+            setObject(parameterIndex, x, Types.TIME);
             return;
         }
         if (x == null) {
-            setNull(parameterIndex, Types.TIMESTAMP);
+            setNull(parameterIndex, Types.TIME);
             return;
         }
         // converting to UTC since this is what ES is storing internally
@@ -395,6 +395,11 @@ class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
 
                 setParam(parameterIndex, dateToSet, dataType);
                 return;
+            } else if (dataType == EsType.TIME) {
+                if (x instanceof Time) {
+                    setParam(parameterIndex, new java.util.Date(JdbcDateUtils.asTime(((Time) x).getTime(), UTC).getTime()), dataType);
+                    return;
+                }
             } else if (TypeUtils.isString(dataType)) {
                 setParam(parameterIndex, String.valueOf(x), dataType);
                 return;

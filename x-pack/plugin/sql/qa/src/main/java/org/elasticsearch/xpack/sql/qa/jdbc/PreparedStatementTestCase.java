@@ -133,7 +133,7 @@ public class PreparedStatementTestCase extends JdbcIntegrationTestCase {
 
         try (Connection connection = esJdbc()) {
             try (PreparedStatement statement = connection.prepareStatement("SELECT id, birth_date FROM emps WHERE birth_date = ?")) {
-                Object dateTimeParam = randomFrom(new Timestamp(randomMillis), new Date(randomMillis), new Time(randomMillis));
+                Object dateTimeParam = randomFrom(new Timestamp(randomMillis), new Date(randomMillis));
                 statement.setObject(1, dateTimeParam);
                 try (ResultSet results = statement.executeQuery()) {
                     assertTrue(results.next());
@@ -143,13 +143,22 @@ public class PreparedStatementTestCase extends JdbcIntegrationTestCase {
                 }
             }
             try (PreparedStatement statement = connection.prepareStatement("SELECT id, birth_date FROM emps WHERE birth_date::date = ?")) {
-                statement.setDate(1, new Date(asDate(randomMillis, UTC).getTime()));
+                statement.setDate(1, asDate(randomMillis, UTC));
                 try (ResultSet results = statement.executeQuery()) {
                     for (int i = 1; i <= 3; i++) {
                         assertTrue(results.next());
                         assertEquals(1000 + i, results.getInt(1));
                         assertEquals(new Timestamp(testMillis(randomMillis, i)), results.getTimestamp(2));
                     }
+                    assertFalse(results.next());
+                }
+            }
+            try (PreparedStatement statement = connection.prepareStatement("SELECT id, birth_date FROM emps WHERE birth_date::time = ?")) {
+                statement.setTime(1, asTime(randomMillis, UTC));
+                try (ResultSet results = statement.executeQuery()) {
+                    assertTrue(results.next());
+                    assertEquals(1002, results.getInt(1));
+                    assertEquals(new Timestamp(randomMillis), results.getTimestamp(2));
                     assertFalse(results.next());
                 }
             }

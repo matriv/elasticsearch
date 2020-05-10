@@ -9,8 +9,10 @@ package org.elasticsearch.xpack.sql.jdbc;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.function.Function;
 
@@ -48,6 +50,11 @@ final class JdbcDateUtils {
     static Time asTime(String date) {
         ZonedDateTime zdt = asDateTime(date);
         return new Time(zdt.toLocalTime().atDate(EPOCH).atZone(zdt.getZone()).toInstant().toEpochMilli());
+    }
+
+    static Time asTime(long millis, ZoneId zoneId) {
+        return new Time(ZonedDateTime.ofInstant(Instant.ofEpochMilli(millis), zoneId)
+            .toLocalTime().atDate(EPOCH).atZone(zoneId).toInstant().toEpochMilli());
     }
 
     static Time timeAsTime(String date) {
