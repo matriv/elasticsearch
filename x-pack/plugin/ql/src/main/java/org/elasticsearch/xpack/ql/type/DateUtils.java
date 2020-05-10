@@ -18,7 +18,7 @@ public final class DateUtils {
 
     public static final ZoneId UTC = ZoneId.of("Z");
 
-    private static final DateFormatter UTC_DATE_TIME_FORMATTER = DateFormatter.forPattern("date_optional_time").withZone(UTC);
+    private static final DateFormatter UTC_DATE_TIME_FORMATTER = DateFormatter.forPattern("strict_date_optional_time").withZone(UTC);
 
     private DateUtils() {}
 

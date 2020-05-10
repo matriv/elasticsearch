@@ -5,6 +5,8 @@
  */
 package org.elasticsearch.xpack.sql.jdbc;
 
+import org.elasticsearch.xpack.sql.proto.StringUtils;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -28,11 +30,13 @@ import java.sql.Struct;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -377,23 +381,24 @@ class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
         {
             if (dataType == EsType.DATETIME) {
                 // converting to {@code java.util.Date} because this is the type supported by {@code XContentBuilder} for serialization
-                java.util.Date dateToSet;
+                long millisToSet;
                 if (x instanceof Timestamp) {
-                    dateToSet = new java.util.Date(((Timestamp) x).getTime());
+                    millisToSet = ((Timestamp) x).getTime();
                 } else if (x instanceof Calendar) {
-                    dateToSet = ((Calendar) x).getTime();
+                    millisToSet = ((Calendar) x).getTimeInMillis();
                 } else if (x instanceof Date) {
-                    dateToSet = new java.util.Date(((Date) x).getTime());
+                    millisToSet = ((Date) x).getTime();
                 } else if (x instanceof LocalDateTime){
                     LocalDateTime ldt = (LocalDateTime) x;
-                    dateToSet = new java.util.Date(ldt.toInstant(UTC).toEpochMilli());
+                    millisToSet = ldt.toInstant(UTC).toEpochMilli();
                 } else if (x instanceof Time) {
-                    dateToSet = new java.util.Date(((Time) x).getTime());
+                    millisToSet = ((Time) x).getTime();
                 } else {
-                    dateToSet = (java.util.Date) x;
+                    millisToSet = ((java.util.Date) x).getTime();
                 }
 
-                setParam(parameterIndex, dateToSet, dataType);
+                ZonedDateTime zdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(millisToSet), cfg.zoneId());
+                setParam(parameterIndex, StringUtils.toString(zdt), dataType);
                 return;
             } else if (TypeUtils.isString(dataType)) {
                 setParam(parameterIndex, String.valueOf(x), dataType);
