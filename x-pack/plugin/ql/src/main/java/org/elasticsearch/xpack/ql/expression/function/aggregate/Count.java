@@ -51,6 +51,11 @@ public class Count extends AggregateFunction {
     }
 
     @Override
+    public Object foldLocal() {
+        return 1L;
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), distinct());
     }

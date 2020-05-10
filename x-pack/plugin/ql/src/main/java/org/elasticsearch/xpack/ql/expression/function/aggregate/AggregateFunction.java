@@ -14,6 +14,9 @@ import org.elasticsearch.xpack.ql.expression.gen.pipeline.AggNameInput;
 import org.elasticsearch.xpack.ql.expression.gen.pipeline.Pipe;
 import org.elasticsearch.xpack.ql.expression.gen.script.ScriptTemplate;
 import org.elasticsearch.xpack.ql.tree.Source;
+import org.elasticsearch.xpack.ql.type.DataTypeConverter;
+import org.elasticsearch.xpack.ql.type.DataTypes;
+import org.elasticsearch.xpack.ql.util.Check;
 import org.elasticsearch.xpack.ql.util.CollectionUtils;
 
 import java.util.List;
@@ -62,6 +65,11 @@ public abstract class AggregateFunction extends Function {
     @Override
     public ScriptTemplate asScript() {
         throw new QlIllegalArgumentException("Aggregate functions cannot be scripted");
+    }
+
+    public Object foldLocal() {
+        Check.isTrue(field.foldable(), "argument of {} should be foldable", functionName());
+        return DataTypeConverter.convert(field.fold(), dataType());
     }
 
     @Override

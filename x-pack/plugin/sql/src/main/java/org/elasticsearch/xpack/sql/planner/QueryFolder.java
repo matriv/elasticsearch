@@ -79,6 +79,7 @@ import org.elasticsearch.xpack.sql.querydsl.container.QueryContainer;
 import org.elasticsearch.xpack.sql.querydsl.container.ScoreSort;
 import org.elasticsearch.xpack.sql.querydsl.container.TopHitsAggRef;
 import org.elasticsearch.xpack.sql.session.EmptyExecutable;
+import org.elasticsearch.xpack.sql.session.SingletonExecutable;
 import org.elasticsearch.xpack.sql.type.SqlDataTypeConverter;
 import org.elasticsearch.xpack.sql.util.Check;
 import org.elasticsearch.xpack.sql.util.DateUtils;
@@ -846,6 +847,17 @@ class QueryFolder extends RuleExecutor<PhysicalPlan> {
                 if (p instanceof LocalExec) {
                     if (((LocalExec) p).isEmpty()) {
                         return new LocalExec(plan.source(), new EmptyExecutable(plan.output()));
+                    } else if (plan instanceof AggregateExec) {
+                        AggregateExec ae = (AggregateExec) plan;
+                        Object[] values = new Object[ae.output().size()];
+                        for (int i = 0; i < ae.aggregates().size(); i++) {
+                            Expression e = ae.aggregates().get(i);
+                            if (e instanceof Alias) {
+                                e = ((Alias) e).child();
+                            }
+                            values[i] = ((AggregateFunction) e).foldLocal();
+                        }
+                        return new LocalExec(plan.source(), new SingletonExecutable(ae.output(), values));
                     } else {
                         throw new SqlIllegalArgumentException("Encountered a bug; {} is a LocalExec but is not empty", p);
                     }

@@ -40,9 +40,4 @@ public class Avg extends NumericAggregate implements EnclosedAgg {
     public String innerName() {
         return "avg";
     }
-
-    @Override
-    public DataType dataType() {
-        return DataTypes.DOUBLE;
-    }
 }

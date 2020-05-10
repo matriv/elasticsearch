@@ -63,11 +63,6 @@ public class Percentile extends NumericAggregate implements EnclosedAgg {
     }
 
     @Override
-    public DataType dataType() {
-        return DataTypes.DOUBLE;
-    }
-
-    @Override
     public String innerName() {
         Double value = (Double) SqlDataTypeConverter.convert(Foldables.valueOf(percent), DataTypes.DOUBLE);
         return Double.toString(value);

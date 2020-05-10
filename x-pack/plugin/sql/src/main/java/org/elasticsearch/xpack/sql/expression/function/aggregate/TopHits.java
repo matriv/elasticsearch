@@ -5,6 +5,7 @@
  */
 package org.elasticsearch.xpack.sql.expression.function.aggregate;
 
+import org.elasticsearch.xpack.ql.QlIllegalArgumentException;
 import org.elasticsearch.xpack.ql.expression.Expression;
 import org.elasticsearch.xpack.ql.expression.Expressions.ParamOrdinal;
 import org.elasticsearch.xpack.ql.expression.TypeResolutions;
@@ -60,5 +61,10 @@ public abstract class TopHits extends AggregateFunction implements OptionalArgum
             }
         }
         return TypeResolution.TYPE_RESOLVED;
+    }
+
+    @Override
+    public Object foldLocal() {
+        throw new QlIllegalArgumentException("TopHits cannot operate on literals and therefore cannot be used in a LocalExec");
     }
 }
