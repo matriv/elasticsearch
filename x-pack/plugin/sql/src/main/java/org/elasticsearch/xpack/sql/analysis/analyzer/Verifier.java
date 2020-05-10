@@ -855,12 +855,16 @@ public final class Verifier {
         // MatrixStats aggregate functions cannot operates on scalars
         // https://github.com/elastic/elasticsearch/issues/55344
         p.forEachExpressions(e -> e.forEachUp((Kurtosis s) -> {
-            if (s.field() instanceof Function) {
+            if (s.field().foldable()) {
+                localFailures.add(fail(s.field(), "[{}()] cannot be used on top of literals", s.functionName()));
+            } else if (s.field() instanceof Function) {
                 localFailures.add(fail(s.field(), "[{}()] cannot be used on top of operators or scalars", s.functionName()));
             }
         }, Kurtosis.class));
         p.forEachExpressions(e -> e.forEachUp((Skewness s) -> {
-            if (s.field() instanceof Function) {
+            if (s.field().foldable()) {
+            localFailures.add(fail(s.field(), "[{}()] cannot be used on top of literals", s.functionName()));
+            } else if (s.field() instanceof Function) {
                 localFailures.add(fail(s.field(), "[{}()] cannot be used on top of operators or scalars", s.functionName()));
             }
         }, Skewness.class));

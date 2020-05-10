@@ -13,7 +13,7 @@ import org.elasticsearch.xpack.ql.execution.search.AggRef;
 public class GroupByRef extends AggRef {
 
     public enum Property {
-        VALUE, COUNT;
+        VALUE, COUNT, COUNT_DISTINCT;
     }
     
     private final String key;
@@ -40,6 +40,6 @@ public class GroupByRef extends AggRef {
 
     @Override
     public String toString() {
-        return "|" + key + (property == Property.COUNT ? ".count" : "") + "|";
+        return "|" + key + (property == Property.COUNT ? ".count" : (property == Property.COUNT_DISTINCT) ? ".count_distinct" : "") + "|";
     }
 }

@@ -64,6 +64,13 @@ public class CompositeKeyExtractorTests extends AbstractSqlWireSerializingTestCa
         assertEquals(bucket.getDocCount(), extractor.extract(bucket));
     }
 
+    public void testExtractBucketCountDistinct() {
+        Bucket bucket = new TestBucket(emptyMap(), randomLong(), new Aggregations(emptyList()));
+        CompositeKeyExtractor extractor = new CompositeKeyExtractor(randomAlphaOfLength(16), Property.COUNT_DISTINCT,
+            randomZone(), false);
+        assertEquals(1L, extractor.extract(bucket));
+    }
+
     public void testExtractKey() {
         CompositeKeyExtractor extractor = new CompositeKeyExtractor(randomAlphaOfLength(16), Property.VALUE, UTC, false);
 

@@ -1105,4 +1105,11 @@ public class VerifierErrorMessagesTests extends ESTestCase {
         assertEquals("1:17: [SKEWNESS()] cannot be used on top of operators or scalars",
                 error("SELECT SKEWNESS(ABS(int * 10.123)) FROM test"));
     }
+
+    public void testErrorMessageForMatrixStatsWithLiterals() {
+        assertEquals("1:17: [KURTOSIS()] cannot be used on top of literals",
+            error("SELECT KURTOSIS(ABS(2 * 10.123)) FROM test"));
+        assertEquals("1:17: [SKEWNESS()] cannot be used on top of literals",
+            error("SELECT SKEWNESS(ABS(2 * 10.123)) FROM test"));
+    }
 }

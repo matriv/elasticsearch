@@ -86,6 +86,7 @@ import java.util.List;
 import static java.util.Collections.singletonList;
 import static org.elasticsearch.xpack.ql.expression.Expressions.id;
 import static org.elasticsearch.xpack.ql.expression.Foldables.valueOf;
+import static org.elasticsearch.xpack.ql.expression.gen.script.Scripts.ofLiteral;
 
 final class QueryTranslator {
 
@@ -237,10 +238,7 @@ final class QueryTranslator {
     }
 
     static String field(AggregateFunction af, Expression arg) {
-        if (arg.foldable()) {
-            return String.valueOf(arg.fold());
-        }
-        if (arg instanceof FieldAttribute) {
+        if (isField(arg)) {
             FieldAttribute field = (FieldAttribute) arg;
             // COUNT(DISTINCT) uses cardinality aggregation which works on exact values (not changed by analyzers or normalizers)
             if ((af instanceof Count && ((Count) af).distinct()) || af instanceof TopHits) {
@@ -253,8 +251,8 @@ final class QueryTranslator {
                                               af.nodeString());
     }
 
-    private static boolean isFieldOrLiteral(Expression e) {
-        return e.foldable() || e instanceof FieldAttribute;
+    private static boolean isField(Expression e) {
+        return e instanceof FieldAttribute;
     }
 
     private static AggSource asFieldOrLiteralOrScript(AggregateFunction af) {
@@ -265,7 +263,10 @@ final class QueryTranslator {
         if (e == null) {
             return null;
         }
-        return isFieldOrLiteral(e) ? AggSource.of(field(af, e)) : AggSource.of(((ScalarFunction) e).asScript());
+        if (e.foldable()) { // Aggregate function on literals
+            return AggSource.of(ofLiteral(e));
+        }
+        return isField(e) ? AggSource.of(field(af, e)) : AggSource.of(((ScalarFunction) e).asScript());
     }
 
     // TODO: see whether escaping is needed
@@ -350,7 +351,7 @@ final class QueryTranslator {
                 aggFilter = new AggFilter(id(isNotNull), isNotNull.asScript());
             } else {
                 Query q = null;
-                if (isNotNull.field() instanceof FieldAttribute) {
+                if (isField(isNotNull.field())) {
                     q = new ExistsQuery(isNotNull.source(), handler.nameOf(isNotNull.field()));
                 } else {
                     q = new ScriptQuery(isNotNull.source(), isNotNull.asScript());
@@ -373,7 +374,7 @@ final class QueryTranslator {
                 aggFilter = new AggFilter(id(isNull), isNull.asScript());
             } else {
                 Query q = null;
-                if (isNull.field() instanceof FieldAttribute) {
+                if (isField(isNull.field())) {
                     q = new NotQuery(isNull.source(), new ExistsQuery(isNull.source(), handler.nameOf(isNull.field())));
                 } else {
                     q = new ScriptQuery(isNull.source(), isNull.asScript());
@@ -415,7 +416,7 @@ final class QueryTranslator {
                  if (bc instanceof LessThan || bc instanceof LessThanOrEqual) {
                     // Special case for ST_Distance translatable into geo_distance query
                     StDistance stDistance = (StDistance) bc.left();
-                    if (stDistance.left() instanceof FieldAttribute && stDistance.right().foldable()) {
+                    if (isField(stDistance.left()) && stDistance.right().foldable()) {
                         Object geoShape = valueOf(stDistance.right());
                         if (geoShape instanceof GeoShape) {
                             Geometry geometry = ((GeoShape) geoShape).toGeometry();
@@ -613,8 +614,14 @@ final class QueryTranslator {
 
         @Override
         protected LeafAgg toAgg(String id, MatrixStats m) {
-            if (isFieldOrLiteral(m.field())) {
+            if (isField(m.field())) {
                 return new MatrixStatsAgg(id, singletonList(field(m, m.field())));
+            }
+            if (m.field().foldable()) {
+                throw new SqlIllegalArgumentException(
+                    "Cannot use literals: [{}] in aggregate functions [KURTOSIS] and [SKEWNESS]",
+                    m.field().toString()
+                );
             }
             throw new SqlIllegalArgumentException(
                 "Cannot use scalar functions or operators: [{}] in aggregate functions [KURTOSIS] and [SKEWNESS]",

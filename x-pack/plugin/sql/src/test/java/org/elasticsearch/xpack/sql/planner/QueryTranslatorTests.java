@@ -1929,6 +1929,33 @@ public class QueryTranslatorTests extends ESTestCase {
         }
     }
 
+    public void testLiteralsInsideAggregateFunctions() {
+        for (FunctionDefinition fd : sqlFunctionRegistry.listFunctions()) {
+            if (AggregateFunction.class.isAssignableFrom(fd.clazz()) && (MatrixStatsEnclosed.class.isAssignableFrom(fd.clazz()) == false) &&
+                TopHits.class.isAssignableFrom(fd.clazz()) == false) {
+
+                String aggFunction = fd.name() + "(ABS((-2 * 10) / 3) + 1";
+                if (fd.clazz() == Percentile.class || fd.clazz() == PercentileRank.class) {
+                    aggFunction += ", 50";
+                }
+                aggFunction += ")";
+                PhysicalPlan p = optimizeAndPlan("SELECT " + aggFunction + " FROM test");
+                assertEquals(EsQueryExec.class, p.getClass());
+                EsQueryExec eqe = (EsQueryExec) p;
+                assertEquals(1, eqe.output().size());
+                assertEquals(aggFunction, eqe.output().get(0).qualifiedName());
+                if (fd.clazz() == Count.class) {
+                    assertNull(eqe.queryContainer().aggs().asAggBuilder());
+                } else {
+                    assertThat(
+                        eqe.queryContainer().aggs().asAggBuilder().toString().replaceAll("\\s+", ""),
+                        containsString("{\"script\":{\"source\":\"params.v0\",\"lang\":\"painless\",\"params\":{\"v0\":7}}")
+                    );
+                }
+            }
+        }
+    }
+
     public void testScriptsInsideAggregateFunctions_WithHaving() {
         for (FunctionDefinition fd : sqlFunctionRegistry.listFunctions()) {
             if (AggregateFunction.class.isAssignableFrom(fd.clazz())
@@ -1936,6 +1963,39 @@ public class QueryTranslatorTests extends ESTestCase {
                     // First/Last don't support having: https://github.com/elastic/elasticsearch/issues/37938
                     && (TopHits.class.isAssignableFrom(fd.clazz()) == false)) {
                 String aggFunction = fd.name() + "(ABS((int * 10) / 3) + 1";
+                if (fd.clazz() == Percentile.class || fd.clazz() == PercentileRank.class) {
+                    aggFunction += ", 50";
+                }
+                aggFunction += ")";
+                LogicalPlan p = plan("SELECT " + aggFunction + ", keyword FROM test " + "GROUP BY keyword HAVING " + aggFunction + " > 20");
+                assertTrue(p instanceof Filter);
+                assertTrue(((Filter) p).child() instanceof Aggregate);
+                List<Attribute> outputs = ((Filter) p).child().output();
+                assertEquals(2, outputs.size());
+                assertEquals(aggFunction, outputs.get(0).qualifiedName());
+                assertEquals("test.keyword", outputs.get(1).qualifiedName());
+
+                Expression condition = ((Filter) p).condition();
+                assertFalse(condition.foldable());
+                QueryTranslation translation = translateWithAggs(condition);
+                assertNull(translation.query);
+                AggFilter aggFilter = translation.aggFilter;
+                assertEquals(
+                    "InternalQlScriptUtils.nullSafeFilter(InternalQlScriptUtils.gt(params.a0,params.v0))",
+                    aggFilter.scriptTemplate().toString()
+                );
+                assertEquals("[{a=" + aggFunction + "}, {v=20}]", aggFilter.scriptTemplate().params().toString());
+            }
+        }
+    }
+
+    public void testLiteralsInsideAggregateFunctions_WithHaving() {
+        for (FunctionDefinition fd : sqlFunctionRegistry.listFunctions()) {
+            if (AggregateFunction.class.isAssignableFrom(fd.clazz())
+                && (MatrixStatsEnclosed.class.isAssignableFrom(fd.clazz()) == false)
+                // First/Last don't support having: https://github.com/elastic/elasticsearch/issues/37938
+                && (TopHits.class.isAssignableFrom(fd.clazz()) == false)) {
+                String aggFunction = fd.name() + "(ABS((-2 * 10) / 3) + 1";
                 if (fd.clazz() == Percentile.class || fd.clazz() == PercentileRank.class) {
                     aggFunction += ", 50";
                 }
@@ -1982,6 +2042,21 @@ public class QueryTranslatorTests extends ESTestCase {
         );
     }
 
+    public void testLiteralsInsideAggregateFunctions_ConvertedToStats() {
+        String aggFunctionArgs1 = "MIN(ABS((-2 * 10) / 3) + 1)";
+        String aggFunctionArgs2 = "MAX(ABS((-2 * 10) / 3) + 1)";
+        PhysicalPlan p = optimizeAndPlan("SELECT " + aggFunctionArgs1 + ", " + aggFunctionArgs2 + " FROM test");
+        assertEquals(EsQueryExec.class, p.getClass());
+        EsQueryExec eqe = (EsQueryExec) p;
+        assertEquals(2, eqe.output().size());
+        assertEquals(aggFunctionArgs1, eqe.output().get(0).qualifiedName());
+        assertEquals(aggFunctionArgs2, eqe.output().get(1).qualifiedName());
+        assertThat(
+            eqe.queryContainer().aggs().asAggBuilder().toString().replaceAll("\\s+", ""),
+            containsString("{\"stats\":{\"script\":{\"source\":\"params.v0\",\"lang\":\"painless\",\"params\":{\"v0\":7}}}")
+        );
+    }
+
     public void testScriptsInsideAggregateFunctions_ExtendedStats() {
         for (FunctionDefinition fd : sqlFunctionRegistry.listFunctions()) {
             if (ExtendedStatsEnclosed.class.isAssignableFrom(fd.clazz())) {
@@ -1999,6 +2074,23 @@ public class QueryTranslatorTests extends ESTestCase {
                             + "doc,params.v0),params.v1),params.v2)),params.v3)\",\"lang\":\"painless\",\"params\":{"
                             + "\"v0\":\"int\",\"v1\":10,\"v2\":3,\"v3\":1}}"
                     )
+                );
+            }
+        }
+    }
+
+    public void testLiteralsInsideAggregateFunctions_ExtendedStats() {
+        for (FunctionDefinition fd : sqlFunctionRegistry.listFunctions()) {
+            if (ExtendedStatsEnclosed.class.isAssignableFrom(fd.clazz())) {
+                String aggFunction = fd.name() + "(ABS((-2 * 10) / 3) + 1)";
+                PhysicalPlan p = optimizeAndPlan("SELECT " + aggFunction + " FROM test");
+                assertEquals(EsQueryExec.class, p.getClass());
+                EsQueryExec eqe = (EsQueryExec) p;
+                assertEquals(1, eqe.output().size());
+                assertEquals(aggFunction, eqe.output().get(0).qualifiedName());
+                assertThat(
+                    eqe.queryContainer().aggs().asAggBuilder().toString().replaceAll("\\s+", ""),
+                    containsString("{\"extended_stats\":{\"script\":{\"source\":\"params.v0\",\"lang\":\"painless\",\"params\":{\"v0\":7}}")
                 );
             }
         }

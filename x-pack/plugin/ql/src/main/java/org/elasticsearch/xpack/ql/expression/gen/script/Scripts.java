@@ -6,6 +6,7 @@
 
 package org.elasticsearch.xpack.ql.expression.gen.script;
 
+import org.elasticsearch.xpack.ql.expression.Expression;
 import org.elasticsearch.xpack.ql.type.DataType;
 import org.elasticsearch.xpack.ql.type.DataTypes;
 
@@ -94,5 +95,10 @@ public final class Scripts {
                     .script(rightScript.params())
                     .build(),
                 dataType);
+    }
+
+    public static ScriptTemplate ofLiteral(Expression e) {
+        Params params = ParamsBuilder.paramsBuilder().variable(e.fold()).build();
+        return new ScriptTemplate(formatTemplate("{}"), params, e.dataType());
     }
 }

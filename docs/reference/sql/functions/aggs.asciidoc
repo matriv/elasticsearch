@@ -439,6 +439,11 @@ the following is not allowed and an error is returned:
 ---------------------------------------
  SELECT KURTOSIS(salary / 12.0), gender FROM emp GROUP BY gender
 ---------------------------------------
+More over it cannot be used on top of literals:
+[source, sql]
+---------------------------------------
+ SELECT KURTOSIS(10.123), gender FROM emp GROUP BY gender
+---------------------------------------
 ====
 
 [[sql-functions-aggs-mad]]
@@ -567,6 +572,11 @@ not allowed and an error is returned:
 [source, sql]
 ---------------------------------------
  SELECT SKEWNESS(ROUND(salary / 12.0, 2), gender FROM emp GROUP BY gender
+---------------------------------------
+More over it cannot be used on top of literals:
+[source, sql]
+---------------------------------------
+ SELECT SKEWNESS(10.123), gender FROM emp GROUP BY gender
 ---------------------------------------
 ====
 

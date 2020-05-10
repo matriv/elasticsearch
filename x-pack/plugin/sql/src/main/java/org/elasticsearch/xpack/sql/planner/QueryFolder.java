@@ -637,7 +637,7 @@ class QueryFolder extends RuleExecutor<PhysicalPlan> {
                         // if the count points to the total track hits, enable accurate count retrieval
                         queryC = queryC.withTrackHits();
                     } else {
-                        ref = new GroupByRef(groupingAgg.id(), Property.COUNT, false);
+                        ref = new GroupByRef(groupingAgg.id(), c.distinct() ? Property.COUNT_DISTINCT : Property.COUNT, false);
                     }
 
                     Map<String, GroupByKey> pseudoFunctions = new LinkedHashMap<>(queryC.pseudoFunctions());

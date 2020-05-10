@@ -81,6 +81,8 @@ public class CompositeKeyExtractor implements BucketExtractor {
     public Object extract(Bucket bucket) {
         if (property == Property.COUNT) {
             return bucket.getDocCount();
+        } else if (property == Property.COUNT_DISTINCT){
+            return Long.valueOf(1);
         }
         // get the composite value
         Object m = bucket.getKey();
