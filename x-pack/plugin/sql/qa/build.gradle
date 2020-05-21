@@ -55,10 +55,12 @@ subprojects {
 
   configurations.testRuntimeClasspath {
     resolutionStrategy.force "org.slf4j:slf4j-api:1.7.25"
+    resolutionStrategy.force "com.h2database:h2:${h2Version}"
   }
   configurations.testRuntime {
     // This is also required to make resolveAllDependencies work
     resolutionStrategy.force "org.slf4j:slf4j-api:1.7.25"
+    resolutionStrategy.force "com.h2database:h2:${h2Version}"
   }
   dependencies {
 

@@ -1,0 +1,84 @@
+// To mute tests follow example in file: example.csv-spec
+
+exactIntervals
+SELECT INTERVAL 1 YEAR AS y, INTERVAL 2 MONTH AS m, INTERVAL 3 DAY AS d, INTERVAL 4 HOUR AS h, INTERVAL 5 MINUTE AS mm, INTERVAL 6 SECOND AS s;
+testExactIntervalPlural
+SELECT INTERVAL 1 YEARS AS y, INTERVAL 2 MONTHS AS m, INTERVAL 3 DAYS AS d, INTERVAL 4 HOURS AS h, INTERVAL 5 MINUTES AS mm, INTERVAL 6 SECONDS AS s;
+year
+SELECT INTERVAL '326' YEAR;
+month
+SELECT INTERVAL '326' MONTH;
+day
+SELECT INTERVAL '3261' DAY;
+hour
+SELECT INTERVAL '163' HOUR;
+minute
+SELECT INTERVAL '163' MINUTE;
+second
+SELECT INTERVAL '223.16' SECOND;
+yearMonth
+SELECT INTERVAL '163-11' YEAR TO MONTH;
+dayHour
+SELECT INTERVAL '163 12' DAY TO HOUR;
+dayMinute
+SELECT INTERVAL '163 12:39' DAY TO MINUTE AS interval;
+daySecond
+SELECT INTERVAL '163 12:39:59.163' DAY TO SECOND AS interval;
+daySecondNegative
+SELECT INTERVAL -'163 23:39:56.23' DAY TO SECOND AS interval;
+hourMinute
+SELECT INTERVAL '163:39' HOUR TO MINUTE AS interval;
+hourSecond
+SELECT INTERVAL '163:39:59.163' HOUR TO SECOND AS interval;
+minuteSecond
+SELECT INTERVAL '163:59.163' MINUTE TO SECOND AS interval;
+intervalPlusInterval
+SELECT INTERVAL 1 DAY + INTERVAL 53 MINUTES;
+datePlusIntervalInline
+SELECT CAST('1969-05-13T12:34:56' AS DATETIME) + INTERVAL 49 YEARS AS result;
+minusInterval
+SELECT - INTERVAL '49-1' YEAR TO MONTH result;
+intervalMinusInterval
+SELECT INTERVAL '1' DAY - INTERVAL '2' HOURS AS result;
+intervalYearMultiply
+SELECT -2 * INTERVAL '3' YEARS AS result;
+intervalDayMultiply
+SELECT -2 * INTERVAL '1 23:45' DAY TO MINUTES AS result;
+intervalHoursMultiply
+SELECT 4 * -INTERVAL '2' HOURS AS result1, -5 * -INTERVAL '3' HOURS AS result2;
+intervalNullMath
+SELECT null * INTERVAL '1 23:45' DAY TO MINUTES AS null_multiply, INTERVAL '1' DAY - null AS null_sub1, null - INTERVAL '1' DAY AS null_sub2, INTERVAL 1 DAY + null AS null_add;
+intervalAndFieldMultiply
+SELECT languages, CAST (languages * INTERVAL '1 10:30' DAY TO MINUTES AS string) AS result FROM test_emp ORDER BY emp_no LIMIT 5;
+dateMinusInterval
+SELECT CAST('2018-05-13T12:34:56' AS DATETIME) - INTERVAL '2-8' YEAR TO MONTH AS result;
+datePlusInterval
+SELECT MONTH(birth_date) AS m, MONTH(birth_date + INTERVAL '1-2' YEAR TO MONTH) AS f FROM test_emp GROUP BY birth_date ORDER BY birth_date ASC LIMIT 5;
+datePlusMixInterval
+SELECT birth_date, birth_date + INTERVAL '1-2' YEAR TO MONTH AS f FROM test_emp GROUP BY birth_date ORDER BY birth_date ASC LIMIT 5;
+dateMinusInterval
+SELECT YEAR(birth_date) AS y, YEAR(birth_date - INTERVAL 1 YEAR) AS f FROM test_emp GROUP BY birth_date ORDER BY birth_date ASC LIMIT 5;
+datePlusMixInterval
+SELECT birth_date, birth_date + INTERVAL '1-2' YEAR TO MONTH AS f FROM test_emp GROUP BY birth_date ORDER BY birth_date ASC LIMIT 5;
+dateAndMultipleIntervals
+SELECT birth_date, birth_date - INTERVAL 1 YEAR  + INTERVAL '2-3' YEAR TO MONTH AS f FROM test_emp GROUP BY birth_date ORDER BY birth_date ASC LIMIT 5;
+datePlusIntervalWhereClause
+SELECT birth_date, YEAR(birth_date + INTERVAL 1 YEAR) AS f FROM test_emp WHERE YEAR(birth_date + INTERVAL 1 YEAR) > 1 GROUP BY birth_date ORDER BY birth_date ASC LIMIT 5;
+dateMinusIntervalOrder
+SELECT birth_date, MONTH(birth_date - INTERVAL 1 YEAR) AS f FROM test_emp GROUP BY birth_date ORDER BY MONTH(birth_date - INTERVAL 1 YEAR) ASC LIMIT 5;
+
+// see https://github.com/elastic/elasticsearch/issues/35745
+datePlusIntervalHavingClause-Ignore
+SELECT birth_date, MAX(hire_date) - INTERVAL 1 YEAR AS f FROM test_emp GROUP BY birth_date ORDER BY birth_date ASC LIMIT 5;
+monthOfDatePlusInterval_And_GroupBy
+SELECT WEEK_OF_YEAR(birth_date + INTERVAL 25 YEAR) x, COUNT(*) c FROM test_emp GROUP BY x HAVING c >= 3 ORDER BY c DESC, x ASC;
+dayOfWeekPlusInterval_And_GroupBy
+SELECT DOW(birth_date + INTERVAL 5 YEAR) x, COUNT(*) c FROM test_emp GROUP BY x HAVING c >= 3 ORDER BY c DESC;
+dayNamePlusInterval_And_GroupBy
+SELECT DAY_NAME(birth_date + INTERVAL 5 YEAR) x, COUNT(*) c FROM test_emp GROUP BY x HAVING c >= 10 ORDER BY c DESC;
+monthNamePlusInterval_And_GroupBy
+SELECT MONTH_NAME(birth_date + INTERVAL 5 YEAR) x, COUNT(*) c FROM test_emp GROUP BY x HAVING c >= 5 ORDER BY c DESC;
+quarterPlusInterval_And_GroupBy
+SELECT QUARTER(birth_date + INTERVAL 5 YEAR) x, COUNT(*) c FROM test_emp GROUP BY x HAVING c >= 5 ORDER BY x DESC;
+dayOfMonthPlusInterval_And_GroupBy
+SELECT DOM(birth_date + INTERVAL 5 YEAR) x, COUNT(*) c FROM test_emp GROUP BY x HAVING c >= 5 ORDER BY x DESC;
