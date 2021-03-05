@@ -357,7 +357,6 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                                             boolean keepStatesInContext) throws IOException {
         ReaderContext readerContext = createOrGetReaderContext(request, keepStatesInContext);
         try {
-            checkCancelled(task, "dfs");
             try (Releasable ignored = readerContext.markAsUsed(getKeepAlive(request));
                     SearchContext context = createContext(readerContext, request, task, true)) {
                 dfsPhase.execute(context);
@@ -440,7 +439,6 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                                                 boolean keepStatesInContext) throws Exception {
         final ReaderContext readerContext = createOrGetReaderContext(request, keepStatesInContext);
         try {
-            checkCancelled(task, "query");
             try (Releasable ignored = readerContext.markAsUsed(getKeepAlive(request));
                 SearchContext context = createContext(readerContext, request, task, true)) {
                 final long afterQueryTime;
@@ -500,7 +498,6 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
             throw e;
         }
         runAsync(getExecutor(readerContext.indexShard()), () -> {
-            checkCancelled(task, "query");
             final ShardSearchRequest shardSearchRequest = readerContext.getShardSearchRequest(null);
             try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false);
                  SearchOperationListenerExecutor executor = new SearchOperationListenerExecutor(searchContext)) {
@@ -523,7 +520,6 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         final ShardSearchRequest shardSearchRequest = readerContext.getShardSearchRequest(request.shardSearchRequest());
         final Releasable markAsUsed = readerContext.markAsUsed(getKeepAlive(shardSearchRequest));
         runAsync(getExecutor(readerContext.indexShard()), () -> {
-            checkCancelled(task, "query");
             readerContext.setAggregatedDfs(request.dfs());
             try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, true);
                  SearchOperationListenerExecutor executor = new SearchOperationListenerExecutor(searchContext)) {
@@ -574,7 +570,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
             throw e;
         }
         runAsync(getExecutor(readerContext.indexShard()), () -> {
-            checkCancelled(task, "fetch");
+
             final ShardSearchRequest shardSearchRequest = readerContext.getShardSearchRequest(null);
             try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false);
                  SearchOperationListenerExecutor executor = new SearchOperationListenerExecutor(searchContext)) {
@@ -599,7 +595,6 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         final ShardSearchRequest shardSearchRequest = readerContext.getShardSearchRequest(request.getShardSearchRequest());
         final Releasable markAsUsed = readerContext.markAsUsed(getKeepAlive(shardSearchRequest));
         runAsync(getExecutor(readerContext.indexShard()), () -> {
-            checkCancelled(task, "fetch");
             try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false)) {
                 if (request.lastEmittedDoc() != null) {
                     searchContext.scrollContext().lastEmittedDoc = request.lastEmittedDoc();
@@ -763,6 +758,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                                           ShardSearchRequest request,
                                           SearchShardTask task,
                                           boolean includeAggregations) throws IOException {
+        checkCancelled(task, "create-context");
         final DefaultSearchContext context = createSearchContext(readerContext, request, defaultSearchTimeout);
         try {
             if (request.scroll() != null) {

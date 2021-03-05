@@ -10,7 +10,6 @@ package org.elasticsearch.search;
 
 import org.elasticsearch.action.search.SearchShardTask;
 import org.elasticsearch.cluster.service.ClusterService;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.util.BigArrays;
 import org.elasticsearch.indices.IndicesService;
 import org.elasticsearch.indices.breaker.CircuitBreakerService;
@@ -97,13 +96,6 @@ public class MockSearchService extends SearchService {
 
     public void setOnCreateSearchContext(Consumer<SearchContext> onCreateSearchContext) {
         this.onCreateSearchContext = onCreateSearchContext;
-    }
-
-    @Override
-    public DefaultSearchContext createSearchContext(ShardSearchRequest request, TimeValue timeout) throws IOException {
-        DefaultSearchContext searchContext = super.createSearchContext(request, timeout);
-        onCreateSearchContext.accept(searchContext);
-        return searchContext;
     }
 
     @Override
